@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 
+
 class SpaceFillingCurve(ABC):
     """
     Abstract Base Class for all space filling curves.
     """
     
     @abstractmethod
-    def d_to_xy(self, distance, order):
+    def d_to_xy(self, distance: int, order: int) -> tuple[int, int]:
         """
         Maps a 1D distance to 2D coordinates (x, y).
         Order determines the grid size (2^order x 2^order).
@@ -14,13 +15,13 @@ class SpaceFillingCurve(ABC):
         pass
 
     @abstractmethod
-    def xy_to_d(self, x, y, order):
+    def xy_to_d(self, x: int, y: int, order: int) -> int:
         """
         Maps 2D coordinates (x, y) to a 1D distance.
         """
         pass
     
-    def get_max_distance(self, order):
+    def get_max_distance(self, order: int) -> int:
         """Returns the total number of points in the curve."""
         return (2**order) * (2**order)
 
@@ -31,7 +32,7 @@ class HilbertCurve(SpaceFillingCurve):
     Uses iterative approach to map distance to coordinates.
     """
     
-    def d_to_xy(self, distance, order):
+    def d_to_xy(self, distance: int, order: int) -> tuple[int, int]:
         x = 0
         y = 0
         s = 1
@@ -55,7 +56,7 @@ class HilbertCurve(SpaceFillingCurve):
             
         return x, y
 
-    def xy_to_d(self, x, y, order):
+    def xy_to_d(self, x: int, y: int, order: int) -> int:
         d = 0
         s = (1 << (order - 1))
         
@@ -82,7 +83,7 @@ class ZOrderCurve(SpaceFillingCurve):
     Simple bit-interleaving logic.
     """
     
-    def _part1by1(self, n):
+    def _part1by1(self, n: int) -> int:
         n &= 0x0000FFFF
         n = (n | (n << 8)) & 0x00FF00FF
         n = (n | (n << 4)) & 0x0F0F0F0F
@@ -90,7 +91,7 @@ class ZOrderCurve(SpaceFillingCurve):
         n = (n | (n << 1)) & 0x55555555
         return n
 
-    def _unpart1by1(self, n):
+    def _unpart1by1(self, n: int) -> int:
         n &= 0x55555555
         n = (n ^ (n >> 1)) & 0x33333333
         n = (n ^ (n >> 2)) & 0x0F0F0F0F
@@ -98,13 +99,13 @@ class ZOrderCurve(SpaceFillingCurve):
         n = (n ^ (n >> 8)) & 0x0000FFFF
         return n
 
-    def d_to_xy(self, distance, order):
+    def d_to_xy(self, distance: int, order: int) -> tuple[int, int]:
         # De-interleave bits
         x = self._unpart1by1(distance)
         y = self._unpart1by1(distance >> 1)
         return x, y
 
-    def xy_to_d(self, x, y, order):
+    def xy_to_d(self, x: int, y: int, order: int) -> int:
         # Interleave bits
         return (self._part1by1(y) << 1) | self._part1by1(x)
 
@@ -115,11 +116,11 @@ class ScanlineCurve(SpaceFillingCurve):
     Used as a baseline for comparison.
     """
     
-    def d_to_xy(self, distance, order):
+    def d_to_xy(self, distance: int, order: int) -> tuple[int, int]:
         width = 1 << order
         y = distance >> order  # equivalent to: distance // width
         x = distance & (width - 1)  # equivalent to: distance % width
         return x, y
 
-    def xy_to_d(self, x, y, order):
+    def xy_to_d(self, x: int, y: int, order: int) -> int:
         return (y << order) | x

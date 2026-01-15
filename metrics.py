@@ -1,13 +1,14 @@
 import numpy as np
 import math
 
-def calculate_mse(img1, img2):
+
+def calculate_mse(img1: np.ndarray, img2: np.ndarray) -> float:
     """Calculates Mean Squared Error between two images."""
     err = np.sum((img1.astype("float") - img2.astype("float")) ** 2)
     err /= float(img1.shape[0] * img1.shape[1] * img1.shape[2])
     return err
 
-def calculate_psnr(img1, img2):
+def calculate_psnr(img1: np.ndarray, img2: np.ndarray) -> float:
     """Calculates Peak Signal-to-Noise Ratio (dB). Higher is better."""
     mse = calculate_mse(img1, img2)
     if mse == 0:

@@ -7,7 +7,7 @@ class FractalImageProcessor:
     def __init__(self, curve_strategy: SpaceFillingCurve):
         self.curve = curve_strategy
 
-    def _pad_image(self, image):
+    def _pad_image(self, image: np.ndarray) -> tuple[np.ndarray, tuple[int, int], int]:
         """
         Pads image to the nearest power of 2.
         Returns padded image and original dimensions.
@@ -22,7 +22,7 @@ class FractalImageProcessor:
         
         return padded, (h, w), order
 
-    def _generate_mipmaps(self, image, max_order):
+    def _generate_mipmaps(self, image: np.ndarray, max_order: int) -> list[np.ndarray]:
         """
         Generates a pyramid of images (mipmaps) from 1x1 up to full resolution.
         Returns a list of images.
@@ -40,7 +40,7 @@ class FractalImageProcessor:
             
         return list(reversed(mipmaps))
 
-    def encode(self, image_input):
+    def encode(self, image_input: str | np.ndarray) -> tuple[np.ndarray, dict]:
         """
         Encodes image into a fractal stream.
         image_input: Path to image (str) or numpy array.
@@ -89,7 +89,7 @@ class FractalImageProcessor:
         
         return full_stream, metadata
 
-    def decode(self, stream, metadata, prefix_ratio=1.0):
+    def decode(self, stream: np.ndarray, metadata: dict, prefix_ratio: float = 1.0) -> np.ndarray:
         """
         Reconstructs image from a prefix of the stream.
         prefix_ratio: float between 0.0 and 1.0
