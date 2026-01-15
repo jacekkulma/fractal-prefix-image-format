@@ -38,3 +38,9 @@ def calculate_error_curve(
             errors[i, j] = error
 
     return np.mean(errors, axis=0)
+
+
+def area_under_curve(curve: np.ndarray, prefix_ratios: list[float]) -> float:
+    if len(curve) != len(prefix_ratios):
+        raise ValueError(f"Curve and prefix ratios must have the same length - found {len(curve)} and {len(prefix_ratios)}")
+    return np.trapezoid(curve, prefix_ratios)
