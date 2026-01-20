@@ -1,11 +1,15 @@
 import numpy as np
 import math
 import cv2
+from typing import Literal
 from curves import SpaceFillingCurve
 
+MipmapStrategy = Literal["resize", "average"]
+
 class FractalImageProcessor:
-    def __init__(self, curve_strategy: SpaceFillingCurve):
+    def __init__(self, curve_strategy: SpaceFillingCurve, mipmap_strategy: MipmapStrategy = "resize"):
         self.curve = curve_strategy
+        self.mipmap_strategy = mipmap_strategy
 
     def _pad_image(self, image: np.ndarray) -> tuple[np.ndarray, tuple[int, int], int]:
         """
@@ -22,10 +26,11 @@ class FractalImageProcessor:
         
         return padded, (h, w), order
 
-    def _generate_mipmaps(self, image: np.ndarray, max_order: int) -> list[np.ndarray]:
+    def _generate_mipmaps_resize(self, image: np.ndarray, max_order: int) -> list[np.ndarray]:
         """
-        Generates a pyramid of images (mipmaps) from 1x1 up to full resolution.
-        Returns a list of images.
+        Generates mipmaps by resizing the original image to each level.
+        Uses cv2.resize with INTER_AREA interpolation for downsampling.
+        Returns a list of images from smallest (1x1) to largest (full size).
         """
         mipmaps = []
         current = image
@@ -39,6 +44,67 @@ class FractalImageProcessor:
             mipmaps.append(current)
             
         return list(reversed(mipmaps))
+
+    def _generate_mipmaps_average(self, image: np.ndarray, max_order: int) -> list[np.ndarray]:
+        """
+        Generates mipmaps by averaging pixel colors along the curve from the previous iteration.
+        Each pixel in a lower iteration is the average of 4 consecutive pixels (at curve positions 4t to 4t+3)
+        from the higher iteration's curve ordering.
+        Returns a list of images from smallest (1x1) to largest (full size).
+        """
+        mipmaps = []
+        
+        # Start by arranging the full resolution image according to the curve
+        h, w, c = image.shape
+        num_pixels = h * w
+        
+        # Flatten current level using the curve
+        current_curve_data = np.zeros((num_pixels, 3), dtype=np.uint8)
+        for d in range(num_pixels):
+            x, y = self.curve.d_to_xy(d, max_order)
+            current_curve_data[d] = image[y, x]
+        
+        # Now generate each lower level by averaging groups of 4 consecutive pixels
+        for order in range(max_order, 0, -1):
+            # Current order has 2^order x 2^order pixels
+            # Next lower order will have 2^(order-1) x 2^(order-1) pixels
+            lower_order = order - 1
+            lower_size = 2 ** lower_order
+            lower_num_pixels = lower_size * lower_size
+            
+            # Average every 4 consecutive pixels to create the lower level
+            lower_curve_data = np.zeros((lower_num_pixels, 3), dtype=np.float32)
+            for t in range(lower_num_pixels):
+                # Average pixels at positions 4t, 4t+1, 4t+2, 4t+3
+                lower_curve_data[t] = np.mean(current_curve_data[4*t:4*t+4], axis=0)
+            
+            # Convert back to image space for this level
+            lower_image = np.zeros((lower_size, lower_size, c), dtype=np.uint8)
+            for d in range(lower_num_pixels):
+                x, y = self.curve.d_to_xy(d, lower_order)
+                lower_image[y, x] = lower_curve_data[d].astype(np.uint8)
+            
+            mipmaps.append(lower_image)
+            current_curve_data = lower_curve_data.astype(np.uint8)
+        
+        # mipmaps now contains from highest to lowest (excluding the original)
+        # We need to reverse and add the original image at the end
+        mipmaps.reverse()
+        mipmaps.append(image)
+        
+        return mipmaps
+
+    def _generate_mipmaps(self, image: np.ndarray, max_order: int) -> list[np.ndarray]:
+        """
+        Generates a pyramid of images (mipmaps) from 1x1 up to full resolution.
+        Returns a list of images.
+        """
+        if self.mipmap_strategy == "resize":
+            return self._generate_mipmaps_resize(image, max_order)
+        elif self.mipmap_strategy == "average":
+            return self._generate_mipmaps_average(image, max_order)
+        else:
+            raise ValueError(f"Unknown mipmap strategy: {self.mipmap_strategy}")
 
     def encode(self, image_input: str | np.ndarray) -> tuple[np.ndarray, dict]:
         """
