@@ -129,3 +129,46 @@ def color_gradient(size: int) -> np.ndarray:
     image[:, :, 2] = ((xx + yy) / 2 * 255).astype(np.uint8)
     
     return image
+
+
+def random_images(num_images: int, size: int, seed: int | None = None) -> list[np.ndarray]:
+    """Generate a list of random images."""
+    generator = np.random.default_rng(seed)
+    return [random_image(generator, size) for _ in range(num_images)]
+    
+    
+def random_image(generator: np.random.Generator, size: int) -> np.ndarray:
+    """Generate a random image."""
+    index: int = generator.integers(0, 12)
+    match index:
+        case 0:
+            squares = generator.integers(2, 10)
+            return checkerboard(size, squares)
+        case 1:
+            stripes = generator.integers(2, 10)
+            return horizontal_stripes(size, stripes)
+        case 2:
+            stripes = generator.integers(2, 10)
+            return vertical_stripes(size, stripes)
+        case 3:
+            stripes = generator.integers(2, 10)
+            return diagonal_stripes(size, stripes)
+        case 4:
+            return solid_color(size)
+        case 5:
+            circles = generator.integers(2, 10)
+            return concentric_circles(size, circles)
+        case 6:
+            return radial_gradient(size)
+        case 7:
+            return color_gradient(size)
+        case 8:
+            return random_noise(size)
+        case 9:
+            return vertical_gradient(size)
+        case 10:
+            return horizontal_gradient(size)
+        case 11:
+            return diagonal_gradient(size)
+        case _:
+            raise ValueError(f"Invalid random image type index: {index}")
