@@ -21,7 +21,8 @@ class FractalImageProcessor:
         order = math.ceil(math.log2(max_dim))
         size = 2 ** order
         
-        padded = np.zeros((size, size, c), dtype=np.uint8)
+        average_color = np.mean(image, axis=(0, 1), dtype=np.uint8)
+        padded = np.full((size, size, c), average_color, dtype=np.uint8)
         padded[:h, :w, :] = image
         
         return padded, (h, w), order
