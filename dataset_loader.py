@@ -28,6 +28,9 @@ def load_images(num_samples: int | None = None, random_seed: int | None = None) 
         if len(img_array.shape) != 3:
             raise ValueError(f"Unexpected image shape: {img_array.shape}")
         
+        if img_array.shape[-1] != 3:
+            img_array = img_array[..., :3] # drop alpha channel if it exists
+        
         images.append(img_array)
 
     original_length = len(images)

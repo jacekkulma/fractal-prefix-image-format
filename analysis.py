@@ -30,15 +30,23 @@ def calculate_error_curve(
     images: list[np.ndarray],
     prefix_ratios: list[float],
 ) -> np.ndarray:
-    errors = np.zeros((len(images), len(prefix_ratios)))
-    for i, image in enumerate(images):
-        encoded, metadata = processor.encode(image)
-        for j, prefix_ratio in enumerate(prefix_ratios):
-            decoded = processor.decode(encoded, metadata, prefix_ratio)
-            error = calculate_mse(image, decoded)
-            errors[i, j] = error
+    errors = []
+    for image in images:
+        try:
+            encoded, metadata = processor.encode(image)
+            
+            image_errors = []
+            for prefix_ratio in prefix_ratios:
+                decoded = processor.decode(encoded, metadata, prefix_ratio)
+                error = calculate_mse(image, decoded)
+                image_errors.append(error)
+                
+            errors.append(image_errors)
+        
+        except Exception:
+            pass
 
-    return np.mean(errors, axis=0)
+    return np.mean(np.array(errors), axis=0)
 
 
 def area_under_curve(curve: np.ndarray, prefix_ratios: list[float]) -> float:
